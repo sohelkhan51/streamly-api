@@ -1,29 +1,84 @@
-// errorHandler.js
-//
-// TASK 4 — The ONE place every error is turned into an HTTP response.
-// Express recognises this as the error handler ONLY because it has FOUR
-// parameters: (err, req, res, next). Keep all four, even if you don't use next.
-//
-// Map each error TYPE to the right status:
-//   ValidationError        -> 400, return the per-field messages from err.errors
-//   CastError              -> 400, "Invalid ID format" (a bad ObjectId in the URL)
-//   Duplicate key (11000)  -> 409, name the clashing field from err.keyValue
-//   anything else          -> 500 (already done for you — log it, hide details)
+import mongoose from "mongoose";
+import { Video } from "../models/video.model.js";
 
-export function errorHandler(err, req, res, next) {
-  // TODO 4a: if (err.name === "ValidationError") -> 400 with a { field: message } map
-  //   const fields = {};
-  //   for (const key in err.errors) fields[key] = err.errors[key].message;
-  //   return res.status(400).json({ error: "ValidationError", fields });
+// CREATE
+export async function createVideo(req, res, next) {
+  try {
+    const video = await Video.create(req.body);
 
-  // TODO 4b: if (err.name === "CastError") -> 400
-  //   return res.status(400).json({ error: "CastError", message: "Invalid ID format", field: err.path });
+    res.status(201).json(video);
+  } catch (err) {
+    next(err);
+  }
+}
 
-  // TODO 4c: if (err.code === 11000) -> 409
-  //   const field = Object.keys(err.keyValue)[0];
-  //   return res.status(409).json({ error: "DuplicateKey", message: field + " already exists", field });
+// READ ONE
+export async function getVideo(req, res, next) {
+  try {
+    const video = await Video.findById(req.params.id);
 
-  // Fallback (provided) — unknown error.
-  console.error(err);
-  res.status(500).json({ error: "InternalServerError" });
+    if (!video) {
+      return res.status(404).json({
+        error: "Video not found",
+      });
+    }
+
+    res.json(video);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// DELETE
+export async function deleteVideo(req, res, next) {
+  try {
+    const video = await Video.findByIdAndDelete(req.params.id);
+
+    if (!video) {
+      return res.status(404).json({
+        error: "Video not found",
+      });
+    }
+
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+}
+
+// TOP VIDEOS
+export async function topVideos(req, res, next) {
+  try {
+    const channelId = new mongoose.Types.ObjectId(req.params.id);
+
+    const videos = await Video.aggregate([
+      {
+        $match: {
+          channelId,
+        },
+      },
+      {
+        $sort: {
+          views: -1,
+        },
+      },
+      {
+        $limit: 10,
+      },
+      {
+        $project: {
+          title: 1,
+          views: 1,
+        },
+      },
+    ]);
+
+    res.json({
+      channelId: req.params.id,
+      count: videos.length,
+      videos,
+    });
+  } catch (err) {
+    next(err);
+  }
 }
