@@ -1,26 +1,24 @@
+
 import mongoose from "mongoose";
 import { Video } from "../models/video.model.js";
 
-// CREATE
+// CREATE -> 201 with the created video
 export async function createVideo(req, res, next) {
   try {
     const video = await Video.create(req.body);
-
     res.status(201).json(video);
   } catch (err) {
     next(err);
   }
 }
 
-// READ ONE
+// READ ONE -> 200 with the video, or 404 if not found
 export async function getVideo(req, res, next) {
   try {
     const video = await Video.findById(req.params.id);
 
     if (!video) {
-      return res.status(404).json({
-        error: "Video not found",
-      });
+      return res.status(404).json({ message: "Video not found" });
     }
 
     res.json(video);
@@ -29,15 +27,13 @@ export async function getVideo(req, res, next) {
   }
 }
 
-// DELETE
+// DELETE -> 204 no content, or 404 if not found
 export async function deleteVideo(req, res, next) {
   try {
     const video = await Video.findByIdAndDelete(req.params.id);
 
     if (!video) {
-      return res.status(404).json({
-        error: "Video not found",
-      });
+      return res.status(404).json({ message: "Video not found" });
     }
 
     res.status(204).send();
@@ -46,21 +42,17 @@ export async function deleteVideo(req, res, next) {
   }
 }
 
-// TOP VIDEOS
+// TOP 10 VIDEOS BY VIEWS
 export async function topVideos(req, res, next) {
   try {
     const channelId = new mongoose.Types.ObjectId(req.params.id);
 
     const videos = await Video.aggregate([
       {
-        $match: {
-          channelId,
-        },
+        $match: { channelId },
       },
       {
-        $sort: {
-          views: -1,
-        },
+        $sort: { views: -1 },
       },
       {
         $limit: 10,

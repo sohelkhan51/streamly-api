@@ -1,10 +1,11 @@
+
 import mongoose from "mongoose";
 
 const videoSchema = new mongoose.Schema(
   {
     title: {
       type: String,
-      required: [true, "title is required"],
+      required: [true, "Video title is required"],
       trim: true,
       maxlength: 120,
     },
@@ -34,9 +35,7 @@ const videoSchema = new mongoose.Schema(
       default: "draft",
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 export const Video = mongoose.model("Video", videoSchema);
